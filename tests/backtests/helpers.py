@@ -102,18 +102,32 @@ class Backtest:
     log.info("Running cmdline '%s' on '%s'", " ".join(cmdline), REPO_ROOT)
     proc = subprocess.run(cmdline, check=False, shell=False, cwd=REPO_ROOT, text=True, capture_output=True)
     ret = ProcessResult(
-      exitcode=proc.returncode,
-      stdout=proc.stdout.strip(),
-      stderr=proc.stderr.strip(),
-      cmdline=cmdline,
+        exitcode=proc.returncode,
+        stdout=proc.stdout.strip(),
+        stderr=proc.stderr.strip(),
+        cmdline=cmdline,
     )
+
+    # Log the contents of tmp_path for debugging
+    log.debug("Contents of tmp_path (%s):", tmp_path)
+    for file in tmp_path.rglob("*"):
+        log.debug(" - %s", file)
+
     if ret.exitcode != 0:
-      log.info("Command Result:\n%s", ret)
+        log.info("Command Result:\n%s", ret)
     else:
-      log.debug("Command Result:\n%s", ret)
+        log.debug("Command Result:\n%s", ret)
+
     assert ret.exitcode == 0
-    #####
-    json_results_file = list(f for f in tmp_path.rglob("backtest-results-*.json") if "meta" not in str(f))[0]
+
+    # Ensure the JSON results file exists before accessing it
+    json_results_files = list(f for f in tmp_path.rglob("backtest-results-*.json") if "meta" not in str(f))
+    if not json_results_files:
+        log.error("No JSON results file found in tmp_path. Command might have failed.")
+        log.error("Command Output:\n%s", ret)
+        raise FileNotFoundError("Expected JSON results file not found. Check the command output and tmp_path contents.")
+    json_results_file = json_results_files[0]
+
     json_results_artifact_path = None
 
     signals_file = list(f for f in tmp_path.rglob("backtest-results-*signals.pkl") if "meta" not in str(f))[0]
