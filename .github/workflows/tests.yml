@@ -29,6 +29,7 @@ jobs:
         name: Get Changed Files
         uses: dorny/paths-filter@v2
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           list-files: shell
           filters: |
@@ -121,6 +122,7 @@ jobs:
           TIMEFRAME: 5m
           HELPER_TIME_FRAMES: 1m 15m 1h 4h 1d
         run: |
+          chmod +x .github/workflows/scripts/download-necessary-exchange-market-data-for-backtests.sh
           .github/workflows/scripts/download-necessary-exchange-market-data-for-backtests.sh
           cat user_data/data/.git/info/sparse-checkout
           du -sh user_data/data
@@ -128,6 +130,8 @@ jobs:
 
       - name: Run Tests
         run: |
+          warp-cli registration new
+          warp-cli connect
           mkdir artifacts
           chmod 777 artifacts
           chmod 777 ./user_data/backtest_results
